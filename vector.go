@@ -25,13 +25,8 @@ type vector struct {
 	count int
 }
 
-func newNode() *node {
-	n := new(node)
-	return n
-}
-
 func NewVector() IVector {
-	return &vector{root: newNode(), shift: bits, count: 0}
+	return &vector{root: new(node), shift: bits, count: 0}
 }
 
 func (vec *vector) Count() int {
@@ -58,7 +53,7 @@ func (vec *vector) GetNth(i int) (*Object, bool) {
 }
 
 func doAssoc(level uint, n *node, i int, obj *Object) (newnode *node) {
-	newnode = newNode()
+	newnode = new(node)
 	newnode.array = n.array
 	if level == 0 {
 		newnode.array[i&arraymask] = obj
@@ -103,7 +98,7 @@ func (vec *vector) Cons(obj *Object) IVector {
 
 	//overflow root?
 	if (vec.count >> bits) > (1 << vec.shift) {
-		newroot = newNode()
+		newroot = new(node)
 		newroot.array[0] = vec.root
 		newroot.array[1] = newPath(vec.shift, tailNode)
 		newShift += bits
@@ -126,7 +121,7 @@ func pushTail(cnt int, level uint, parent *node, tail *node) *node {
 	// else alloc new path
 	//return  nodeToInsert placed in copy of parent
 	subidx := ((cnt - 1) >> level) & arraymask
-	ret := newNode()
+	ret := new(node)
 	ret.array = parent.array
 
 	var nodeToInsert *node
@@ -150,7 +145,7 @@ func newPath(level uint, n *node) *node {
 	if level == 0 {
 		return n
 	}
-	ret := newNode()
+	ret := new(node)
 	ret.array[0] = newPath(level-bits, n)
 	return ret
 }
@@ -179,5 +174,5 @@ func (vec *vector) arrayFor(i int) ([arraysize]interface{}, bool) {
 		}
 		return n.array, true
 	}
-	return newNode().array, false
+	return new(node).array, false
 }
