@@ -1,7 +1,13 @@
 package rabble
 
+const (
+	bits      = 5
+	arraysize = (1 << bits)     // 32
+	arraymask = (arraysize - 1) // 31
+)
+
 type node struct {
-	array [32]interface{}
+	array [arraysize]interface{}
 }
 
 type IVector interface {
@@ -9,12 +15,12 @@ type IVector interface {
 	SetNth(int, *Object) (IVector, bool)
 	Cons(*Object) IVector
 	Count() int
-	RootArray() [32]interface{}
+	RootArray() [arraysize]interface{}
 }
 
 type vector struct {
 	root  *node
-	tail  [32]interface{}
+	tail  [arraysize]interface{}
 	shift uint
 	count int
 }
@@ -25,14 +31,14 @@ func newNode() *node {
 }
 
 func NewVector() IVector {
-	return &vector{root: newNode(), shift: 5, count: 0}
+	return &vector{root: newNode(), shift: bits, count: 0}
 }
 
 func (vec *vector) Count() int {
 	return vec.count
 }
 
-func (vec *vector) RootArray() [32]interface{} {
+func (vec *vector) RootArray() [arraysize]interface{} {
 	return vec.root.array
 }
 
@@ -42,7 +48,7 @@ func (vec *vector) GetNth(i int) (*Object, bool) {
 		if !ok {
 			return nil, false
 		}
-		n := a[i&0x01f]
+		n := a[i&arraymask]
 		if val, ok := n.(*Object); ok {
 			return val, true
 		}
@@ -55,12 +61,12 @@ func doAssoc(level uint, n *node, i int, obj *Object) (newnode *node) {
 	newnode = newNode()
 	newnode.array = n.array
 	if level == 0 {
-		newnode.array[i&0x01f] = obj
+		newnode.array[i&arraymask] = obj
 	} else {
-		subidx := (i >> level) & 0x01f
+		subidx := (i >> level) & arraymask
 		subobj := n.array[subidx]
 		subnode, _ := subobj.(*node)
-		newnode.array[subidx] = doAssoc(level-5, subnode, i, obj)
+		newnode.array[subidx] = doAssoc(level-bits, subnode, i, obj)
 	}
 	return
 }
@@ -72,7 +78,7 @@ func (vec *vector) SetNth(i int, obj *Object) (IVector, bool) {
 	if vec.count > i && i >= 0 {
 		if i >= vec.tailoff() {
 			newTail := vec.tail
-			newTail[i&0x01f] = obj
+			newTail[i&arraymask] = obj
 			return &vector{root: vec.root, shift: vec.shift, tail: newTail, count: vec.count}, true
 		}
 		newRoot := doAssoc(vec.shift, vec.root, i, obj)
@@ -84,9 +90,9 @@ func (vec *vector) SetNth(i int, obj *Object) (IVector, bool) {
 func (vec *vector) Cons(obj *Object) IVector {
 	i := vec.count
 	// room in tail?
-	if (i - vec.tailoff()) < 32 {
+	if (i - vec.tailoff()) < arraysize {
 		newTail := vec.tail
-		newTail[i&0x01f] = obj
+		newTail[i&arraymask] = obj
 		return &vector{root: vec.root, shift: vec.shift, tail: newTail, count: i + 1}
 	}
 
@@ -96,11 +102,11 @@ func (vec *vector) Cons(obj *Object) IVector {
 	newShift := vec.shift
 
 	//overflow root?
-	if (vec.count >> 5) > (1 << vec.shift) {
+	if (vec.count >> bits) > (1 << vec.shift) {
 		newroot = newNode()
 		newroot.array[0] = vec.root
 		newroot.array[1] = newPath(vec.shift, tailNode)
-		newShift += 5
+		newShift += bits
 	} else {
 		newroot = pushTail(vec.count, vec.shift, vec.root, tailNode)
 	}
@@ -119,21 +125,21 @@ func pushTail(cnt int, level uint, parent *node, tail *node) *node {
 	// else does it map to an existing child? -> nodeToInsert = pushNode one more level
 	// else alloc new path
 	//return  nodeToInsert placed in copy of parent
-	subidx := ((cnt - 1) >> level) & 0x01f
+	subidx := ((cnt - 1) >> level) & arraymask
 	ret := newNode()
 	ret.array = parent.array
 
 	var nodeToInsert *node
 
-	if level == 5 {
+	if level == bits {
 		nodeToInsert = tail
 	} else {
 		child := parent.array[subidx]
 		val, ok := child.(*node)
 		if child == nil || !ok {
-			nodeToInsert = newPath(level-5, tail)
+			nodeToInsert = newPath(level-bits, tail)
 		} else {
-			nodeToInsert = pushTail(cnt, level-5, val, tail)
+			nodeToInsert = pushTail(cnt, level-bits, val, tail)
 		}
 	}
 	ret.array[subidx] = nodeToInsert
@@ -145,29 +151,29 @@ func newPath(level uint, n *node) *node {
 		return n
 	}
 	ret := newNode()
-	ret.array[0] = newPath(level-5, n)
+	ret.array[0] = newPath(level-bits, n)
 	return ret
 }
 
 func (vec *vector) tailoff() int {
-	cnt := vec.Count()
-	if cnt < 32 {
+	cnt := vec.count
+	if cnt < arraysize {
 		return 0
 	}
-	return ((cnt - 1) >> 5) << 5
+	return ((cnt - 1) >> bits) << bits
 }
 
-func (vec *vector) arrayFor(i int) ([32]interface{}, bool) {
-	if i >= 0 && i < vec.Count() {
+func (vec *vector) arrayFor(i int) ([arraysize]interface{}, bool) {
+	if i >= 0 && i < vec.count {
 		if i >= vec.tailoff() {
 			return vec.tail, true
 		}
 		n := vec.root
-		for level := vec.shift; level > 0; level -= 5 {
-			obj := n.array[(i>>level)&0x01f]
+		for level := vec.shift; level > 0; level -= bits {
+			obj := n.array[(i>>level)&arraymask]
 			val, ok := obj.(*node)
 			if !ok {
-				return [32]interface{}{}, false
+				return [arraysize]interface{}{}, false
 			}
 			n = val
 		}
