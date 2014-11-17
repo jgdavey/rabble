@@ -7,7 +7,7 @@ const (
 )
 
 type node struct {
-	array [arraysize]interface{}
+	array [arraysize]interface{} // holding *node or *Object
 }
 
 type IVector interface {
