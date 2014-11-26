@@ -11,25 +11,25 @@ type node struct {
 }
 
 type IVector interface {
-	GetNth(int) (*Object, bool)
-	SetNth(int, *Object) (IVector, bool)
+	GetNth(uint32) (*Object, bool)
+	SetNth(uint32, *Object) (IVector, bool)
 	Cons(*Object) IVector
-	Count() int
+	Count() uint32
 	RootArray() [arraysize]interface{}
 }
 
 type vector struct {
 	root  *node
 	tail  [arraysize]interface{}
-	shift uint
-	count int
+	shift uint32
+	count uint32
 }
 
 func NewVector() IVector {
 	return &vector{root: new(node), shift: bits, count: 0}
 }
 
-func (vec *vector) Count() int {
+func (vec *vector) Count() uint32 {
 	return vec.count
 }
 
@@ -37,7 +37,7 @@ func (vec *vector) RootArray() [arraysize]interface{} {
 	return vec.root.array
 }
 
-func (vec *vector) GetNth(i int) (*Object, bool) {
+func (vec *vector) GetNth(i uint32) (*Object, bool) {
 	if vec.count > i {
 		a, ok := vec.arrayFor(i)
 		if !ok {
@@ -52,7 +52,7 @@ func (vec *vector) GetNth(i int) (*Object, bool) {
 	return nil, false
 }
 
-func doAssoc(level uint, n *node, i int, obj *Object) (newnode *node) {
+func doAssoc(level uint32, n *node, i uint32, obj *Object) (newnode *node) {
 	newnode = new(node)
 	newnode.array = n.array
 	if level == 0 {
@@ -66,7 +66,7 @@ func doAssoc(level uint, n *node, i int, obj *Object) (newnode *node) {
 	return
 }
 
-func (vec *vector) SetNth(i int, obj *Object) (IVector, bool) {
+func (vec *vector) SetNth(i uint32, obj *Object) (IVector, bool) {
 	if vec.count == i {
 		return vec.Cons(obj), true
 	}
@@ -115,7 +115,7 @@ func (vec *vector) Cons(obj *Object) IVector {
 	return v
 }
 
-func pushTail(cnt int, level uint, parent *node, tail *node) *node {
+func pushTail(cnt uint32, level uint32, parent *node, tail *node) *node {
 	//if parent is leaf, insert node,
 	// else does it map to an existing child? -> nodeToInsert = pushNode one more level
 	// else alloc new path
@@ -141,7 +141,7 @@ func pushTail(cnt int, level uint, parent *node, tail *node) *node {
 	return ret
 }
 
-func newPath(level uint, n *node) *node {
+func newPath(level uint32, n *node) *node {
 	if level == 0 {
 		return n
 	}
@@ -150,7 +150,7 @@ func newPath(level uint, n *node) *node {
 	return ret
 }
 
-func (vec *vector) tailoff() int {
+func (vec *vector) tailoff() uint32 {
 	cnt := vec.count
 	if cnt < arraysize {
 		return 0
@@ -158,7 +158,7 @@ func (vec *vector) tailoff() int {
 	return ((cnt - 1) >> bits) << bits
 }
 
-func (vec *vector) arrayFor(i int) ([arraysize]interface{}, bool) {
+func (vec *vector) arrayFor(i uint32) ([arraysize]interface{}, bool) {
 	if i >= 0 && i < vec.count {
 		if i >= vec.tailoff() {
 			return vec.tail, true

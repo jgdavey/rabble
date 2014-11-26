@@ -65,7 +65,7 @@ func TestVectorMultipleCons(t *testing.T) {
 		vec = vec.Cons(&obj)
 	}
 
-	if vec.Count() != max {
+	if vec.Count() != uint32(max) {
 		t.Fatalf("Expected %v items, got: %v", max, vec.Count())
 	}
 
@@ -73,7 +73,7 @@ func TestVectorMultipleCons(t *testing.T) {
 		t.Fatalf("Mutated original")
 	}
 
-	val, ok := vec.GetNth(max - 1)
+	val, ok := vec.GetNth(uint32(max - 1))
 	if !ok {
 		t.Fatalf("Unable to get item at idx %v", max-1)
 	}
@@ -92,7 +92,7 @@ func TestVectorConsPastTail(t *testing.T) {
 		vec = vec.Cons(&obj)
 	}
 
-	if vec.Count() != max {
+	if vec.Count() != uint32(max) {
 		t.Fatalf("Expected %v items, got: %v", max, vec.Count())
 	}
 
@@ -100,7 +100,7 @@ func TestVectorConsPastTail(t *testing.T) {
 		t.Fatalf("Mutated original")
 	}
 
-	val, ok := vec.GetNth(max - 1)
+	val, ok := vec.GetNth(uint32(max - 1))
 	if !ok {
 		t.Fatalf("Unable to get item at idx %v", max-1)
 	}
@@ -119,7 +119,7 @@ func TestVectorConsFillTailAndRoot(t *testing.T) {
 	}
 
 	for i := 0; i < max; i++ {
-		val, ok := vec.GetNth(i)
+		val, ok := vec.GetNth(uint32(i))
 		if !ok || val.Value() != i {
 			t.Fatalf("Expected %v, got %v", i, val.Value())
 		}
